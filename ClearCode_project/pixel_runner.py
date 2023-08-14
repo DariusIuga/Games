@@ -25,11 +25,24 @@ class Player(pygame.sprite.Sprite):
         self.jump_sound = pygame.mixer.Sound("audio/jump.mp3")
         self.jump_sound.set_volume(0.2)
 
-    def jump(self, GROUND_LEVEL):
+    def move(self, width, GROUND_LEVEL):
+        # Control the player
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE] and self.rect.bottom >= GROUND_LEVEL:
+        if (
+            keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP]
+        ) and self.rect.bottom >= GROUND_LEVEL:
             self.gravity = -50
             self.jump_sound.play()
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.rect.x -= width / 200
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.rect.x += width / 200
+
+        # Prevent player from going out of bounds
+        if self.rect.left <= 0:
+            self.rect.left = 20
+        elif self.rect.right >= width:
+            self.rect.right = width - 20
 
     def apply_gravity(self, height, GROUND_LEVEL):
         self.gravity += height / 500
@@ -46,8 +59,8 @@ class Player(pygame.sprite.Sprite):
                 self.animation_index = 0
             self.image = self.walk[int(self.animation_index)]
 
-    def update(self, height, GROUND_LEVEL):
-        self.jump(GROUND_LEVEL)
+    def update(self, width, height, GROUND_LEVEL):
+        self.move(width, GROUND_LEVEL)
         self.apply_gravity(height, GROUND_LEVEL)
         self.animation_state(GROUND_LEVEL)
 
@@ -62,7 +75,7 @@ class Obstacle(pygame.sprite.Sprite):
             fly_frame_2 = pygame.image.load("graphics/Fly/Fly2.png").convert_alpha()
             fly_frame_2 = pygame.transform.scale(fly_frame_2, ENEMY_DIMS)
             self.frames = [fly_frame_1, fly_frame_2]
-            y_pos = randint(height / 4, height / 2)
+            y_pos = randint(height / 5, height / 2)
         elif self.type == "snail":
             snail_frame_1 = pygame.image.load(
                 "graphics/snail/snail1.png"
@@ -212,7 +225,7 @@ def main():
 
             # Draw the sprites
             player.draw(screen)
-            player.update(height, GROUND_LEVEL)
+            player.update(width, height, GROUND_LEVEL)
             obstacle_group.draw(screen)
             obstacle_group.update(width)
 
@@ -227,12 +240,10 @@ def main():
             else:
                 screen.blit(score_message, score_message_rect)
                 screen.blit(highscore_message, highscore_message_rect)
-                if current_score == 69 or highscore == 69:
-                    raise ValueError("Nice")
 
         pygame.display.update()
         # Cap the refresh rate to 60fps
-        clock.tick(60)
+        clock.tick(120)
 
 
 def display_score(width, height, screen, default_font, start_time, highscore):
@@ -263,8 +274,9 @@ def display_score(width, height, screen, default_font, start_time, highscore):
 
 def collision_sprite(player, obstacle_group, GROUND_LEVEL):
     if pygame.sprite.spritecollide(player.sprite, obstacle_group, False):
-        obstacle_group.empty()
         player.sprite.rect.bottom = GROUND_LEVEL
+        player.sprite.rect.left = 0
+        obstacle_group.empty()
         return False
     return True
 
