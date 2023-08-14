@@ -126,14 +126,15 @@ def main():
     MESSAGE_COLOR = (111, 196, 169)
     PLAYER_DIMS = (width / 16, height / 6)
     ENEMY_DIMS = (width / 16, height / 16)
+    STARTING_HEALTH = 10
 
     pygame.display.set_caption("Pixel Runner")
     clock = pygame.time.Clock()
     default_font = pygame.font.Font("fonts/Pixeltype.ttf", 100)
-    game_active = False
     start_time = 0
     current_score = 0
     highscore = 0
+    lives = STARTING_HEALTH
     background_music = pygame.mixer.Sound("audio/secret.opus")
     background_music.play(loops=-1)
 
@@ -148,6 +149,8 @@ def main():
     ground = pygame.transform.scale(ground, (width, height - GROUND_LEVEL))
     sky = pygame.image.load("graphics/sky.png").convert()
     sky = pygame.transform.scale(sky, (width, GROUND_LEVEL))
+    heart = pygame.image.load("graphics/heart.png")
+    heart = pygame.transform.scale(heart, (width / 16, height / 10))
 
     # Menu screen
     player_stand = pygame.image.load("graphics/Player/player_stand.png").convert_alpha()
@@ -176,7 +179,7 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            if game_active:
+            if lives > 0:
                 if event.type == spawn_timer:
                     # Chance of spawning either a snail or fly
                     obstacle_group.add(
@@ -192,13 +195,16 @@ def main():
             else:
                 # Press any button to continue
                 if event.type == pygame.KEYDOWN:
-                    game_active = True
+                    lives = STARTING_HEALTH
                     start_time = pygame.time.get_ticks()
 
-        if game_active:
+        if lives > 0:
             # Render screen
             screen.blit(sky, (0, 0))
             screen.blit(ground, (0, GROUND_LEVEL))
+            # Draw number of current lives
+            for i in range(lives):
+                screen.blit(heart, (width * (0.94 - i / 20), 0))
 
             screen.blit(
                 default_font.render(str(int(clock.get_fps())), False, "green"), (0, 0)
@@ -221,7 +227,7 @@ def main():
                 midtop=(width / 2, 2 * height / 3)
             )
 
-            game_active = collision_sprite(player, obstacle_group, GROUND_LEVEL)
+            lives = collision_sprite(player, obstacle_group, GROUND_LEVEL, lives)
 
             # Draw the sprites
             player.draw(screen)
@@ -231,7 +237,6 @@ def main():
 
         else:
             # Game Over screen
-            # player_rect.midbottom = (width / 8, GROUND_LEVEL)
             screen.fill((94, 129, 162))
             screen.blit(player_stand, player_stand_rect)
             screen.blit(game_name, game_name_rect)
@@ -240,7 +245,7 @@ def main():
             else:
                 screen.blit(score_message, score_message_rect)
                 screen.blit(highscore_message, highscore_message_rect)
-
+                
         pygame.display.update()
         # Cap the refresh rate to 60fps
         clock.tick(120)
@@ -272,13 +277,14 @@ def display_score(width, height, screen, default_font, start_time, highscore):
     return current_score, highscore
 
 
-def collision_sprite(player, obstacle_group, GROUND_LEVEL):
-    if pygame.sprite.spritecollide(player.sprite, obstacle_group, False):
-        player.sprite.rect.bottom = GROUND_LEVEL
-        player.sprite.rect.left = 0
-        obstacle_group.empty()
-        return False
-    return True
+def collision_sprite(player, obstacle_group, GROUND_LEVEL, lives):
+    if pygame.sprite.spritecollide(player.sprite, obstacle_group, True):
+        lives -= 1
+        if lives == 0:
+            player.sprite.rect.bottom = GROUND_LEVEL
+            player.sprite.rect.left = 0
+            obstacle_group.empty()
+    return lives
 
 
 if __name__ == "__main__":
