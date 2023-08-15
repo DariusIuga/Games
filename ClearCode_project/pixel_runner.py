@@ -5,7 +5,12 @@ import pygame
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, width, GROUND_LEVEL, PLAYER_DIMS, ):
+    def __init__(
+        self,
+        width,
+        GROUND_LEVEL,
+        PLAYER_DIMS,
+    ):
         super().__init__()
 
         walk_1 = pygame.image.load("graphics/Player/player_walk_1.png").convert_alpha()
@@ -29,13 +34,13 @@ class Player(pygame.sprite.Sprite):
         self.lives = self._starting_health
         self.drunkennes = 0
 
-    def move(self, width, GROUND_LEVEL):
+    def move(self, width, height, GROUND_LEVEL):
         # Control the player
         keys = pygame.key.get_pressed()
         if (
             keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP]
         ) and self.rect.bottom >= GROUND_LEVEL:
-            self.gravity = -50 + 20 * self.drunkennes
+            self.gravity = -height * (1 / 20 - self.drunkennes / 50)
             self.jump_sound.play()
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             self.rect.x -= width / 200 * (1 - self.drunkennes / 2)
@@ -69,7 +74,7 @@ class Player(pygame.sprite.Sprite):
         self.drunkennes = 0
 
     def update(self, width, height, GROUND_LEVEL):
-        self.move(width, GROUND_LEVEL)
+        self.move(width, height, GROUND_LEVEL)
         self.apply_gravity(height, GROUND_LEVEL)
         self.animation_state(GROUND_LEVEL)
 
@@ -192,7 +197,7 @@ def main():
     pygame.time.set_timer(fly_animation_timer, 200)
 
     bonus_chance_timer = pygame.USEREVENT + 4
-    pygame.time.set_timer(bonus_chance_timer, 10)
+    pygame.time.set_timer(bonus_chance_timer, 5)
 
     while True:
         # Process user input
@@ -287,8 +292,8 @@ def display_score(width, height, screen, default_font, start_time, highscore):
         "#9ad6c3",
         pygame.Rect(
             # Centering the title box
-            score_rect.left - 30,
-            score_rect.top - 15,
+            score_rect.left - width / 80,
+            score_rect.top - height / 100,
             score_rect.width * 1.2,
             score_rect.height * 1.2,
         ),
