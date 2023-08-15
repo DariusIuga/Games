@@ -1,11 +1,11 @@
-from random import choice, randint
+from random import choice, randint, random
 from sys import exit
 
 import pygame
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, width, GROUND_LEVEL, PLAYER_DIMS):
+    def __init__(self, width, GROUND_LEVEL, PLAYER_DIMS, ):
         super().__init__()
 
         walk_1 = pygame.image.load("graphics/Player/player_walk_1.png").convert_alpha()
@@ -25,18 +25,22 @@ class Player(pygame.sprite.Sprite):
         self.jump_sound = pygame.mixer.Sound("audio/jump.mp3")
         self.jump_sound.set_volume(0.2)
 
+        self._starting_health = 3
+        self.lives = self._starting_health
+        self.drunkennes = 0
+
     def move(self, width, GROUND_LEVEL):
         # Control the player
         keys = pygame.key.get_pressed()
         if (
             keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP]
         ) and self.rect.bottom >= GROUND_LEVEL:
-            self.gravity = -50
+            self.gravity = -50 + 20 * self.drunkennes
             self.jump_sound.play()
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.rect.x -= width / 200
+            self.rect.x -= width / 200 * (1 - self.drunkennes / 2)
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.rect.x += width / 200
+            self.rect.x += width / 200 * (1 - self.drunkennes / 2)
 
         # Prevent player from going out of bounds
         if self.rect.left <= 0:
@@ -58,6 +62,11 @@ class Player(pygame.sprite.Sprite):
             if self.animation_index >= len(self.walk):
                 self.animation_index = 0
             self.image = self.walk[int(self.animation_index)]
+
+    def revive(self):
+        # Player gets to full health and sobers up
+        self.lives = self._starting_health
+        self.drunkennes = 0
 
     def update(self, width, height, GROUND_LEVEL):
         self.move(width, GROUND_LEVEL)
@@ -116,6 +125,16 @@ class Obstacle(pygame.sprite.Sprite):
         self.destroy()
 
 
+class Consumable(pygame.sprite.Sprite):
+    def __init__(self, width, height, GROUND_LEVEL):
+        super().__init__()
+        self.image = pygame.image.load("graphics/beer.png")
+        self.image = pygame.transform.scale(self.image, (width / 10, height / 10))
+        self.rect = self.image.get_rect(
+            center=(randint(0, width), randint(0, GROUND_LEVEL))
+        )
+
+
 def main():
     pygame.init()
 
@@ -126,7 +145,6 @@ def main():
     MESSAGE_COLOR = (111, 196, 169)
     PLAYER_DIMS = (width / 16, height / 6)
     ENEMY_DIMS = (width / 16, height / 16)
-    STARTING_HEALTH = 10
 
     pygame.display.set_caption("Pixel Runner")
     clock = pygame.time.Clock()
@@ -134,8 +152,7 @@ def main():
     start_time = 0
     current_score = 0
     highscore = 0
-    lives = STARTING_HEALTH
-    background_music = pygame.mixer.Sound("audio/secret.opus")
+    background_music = pygame.mixer.Sound("audio/epic.opus")
     background_music.play(loops=-1)
 
     # Groups
@@ -143,6 +160,7 @@ def main():
     player.add(Player(width, GROUND_LEVEL, PLAYER_DIMS))
 
     obstacle_group = pygame.sprite.Group()
+    consumable_group = pygame.sprite.Group()
 
     # Textures
     ground = pygame.image.load("graphics/ground.png").convert()
@@ -173,13 +191,16 @@ def main():
     fly_animation_timer = pygame.USEREVENT + 3
     pygame.time.set_timer(fly_animation_timer, 200)
 
+    bonus_chance_timer = pygame.USEREVENT + 4
+    pygame.time.set_timer(bonus_chance_timer, 10)
+
     while True:
         # Process user input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            if lives > 0:
+            if player.sprite.lives > 0:
                 if event.type == spawn_timer:
                     # Chance of spawning either a snail or fly
                     obstacle_group.add(
@@ -191,19 +212,22 @@ def main():
                             choice(["fly", "snail"]),
                         )
                     )
+                # 1/1000 chance of spawning a beer
+                if event.type == bonus_chance_timer and random() > 0.999:
+                    consumable_group.add(Consumable(width, height, GROUND_LEVEL))
 
             else:
                 # Press any button to continue
                 if event.type == pygame.KEYDOWN:
-                    lives = STARTING_HEALTH
+                    player.sprite.revive()
                     start_time = pygame.time.get_ticks()
 
-        if lives > 0:
+        if player.sprite.lives > 0:
             # Render screen
             screen.blit(sky, (0, 0))
             screen.blit(ground, (0, GROUND_LEVEL))
-            # Draw number of current lives
-            for i in range(lives):
+            # Draw current lives
+            for i in range(player.sprite.lives):
                 screen.blit(heart, (width * (0.94 - i / 20), 0))
 
             screen.blit(
@@ -227,13 +251,15 @@ def main():
                 midtop=(width / 2, 2 * height / 3)
             )
 
-            lives = collision_sprite(player, obstacle_group, GROUND_LEVEL, lives)
+            heal_player(player, consumable_group)
+            collision_sprite(player, obstacle_group, consumable_group, GROUND_LEVEL)
 
             # Draw the sprites
             player.draw(screen)
             player.update(width, height, GROUND_LEVEL)
             obstacle_group.draw(screen)
             obstacle_group.update(width)
+            consumable_group.draw(screen)
 
         else:
             # Game Over screen
@@ -245,9 +271,9 @@ def main():
             else:
                 screen.blit(score_message, score_message_rect)
                 screen.blit(highscore_message, highscore_message_rect)
-                
+
         pygame.display.update()
-        # Cap the refresh rate to 60fps
+        # Cap the refresh rate
         clock.tick(120)
 
 
@@ -277,14 +303,21 @@ def display_score(width, height, screen, default_font, start_time, highscore):
     return current_score, highscore
 
 
-def collision_sprite(player, obstacle_group, GROUND_LEVEL, lives):
+def collision_sprite(player, obstacle_group, consumable_group, GROUND_LEVEL):
     if pygame.sprite.spritecollide(player.sprite, obstacle_group, True):
-        lives -= 1
-        if lives == 0:
+        player.sprite.lives -= 1
+        if player.sprite.lives == 0:
             player.sprite.rect.bottom = GROUND_LEVEL
             player.sprite.rect.left = 0
             obstacle_group.empty()
-    return lives
+            consumable_group.empty()
+
+
+def heal_player(player, consumable_group):
+    if pygame.sprite.spritecollide(player.sprite, consumable_group, True):
+        player.sprite.lives += 1
+        if player.sprite.drunkennes < 1:
+            player.sprite.drunkennes += 0.1
 
 
 if __name__ == "__main__":
