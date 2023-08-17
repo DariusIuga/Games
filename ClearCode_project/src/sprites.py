@@ -14,7 +14,15 @@ class Surf_Rect(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, width, GROUND_LEVEL, PLAYER_DIMS, healthup_group, freeze_group):
+    def __init__(
+        self,
+        width,
+        GROUND_LEVEL,
+        PLAYER_DIMS,
+        healthup_group,
+        freeze_group,
+        reverse_group,
+    ):
         super().__init__()
 
         walk_1 = pygame.image.load(
@@ -82,7 +90,7 @@ class Player(pygame.sprite.Sprite):
             self.image = self.walk[int(self.animation_index)]
 
     def check_collision(
-        self, obstacle_group, healthup_group, freeze_group, GROUND_LEVEL
+        self, obstacle_group, healthup_group, freeze_group, reverse_group, GROUND_LEVEL
     ):
         if pygame.sprite.spritecollide(self, obstacle_group, True):
             self.hit_sound.play()
@@ -93,6 +101,7 @@ class Player(pygame.sprite.Sprite):
                 obstacle_group.empty()
                 healthup_group.empty()
                 freeze_group.empty()
+                reverse_group.empty()
 
     def heal(self, healthup_group):
         if pygame.sprite.spritecollide(self, healthup_group, True):
@@ -109,15 +118,30 @@ class Player(pygame.sprite.Sprite):
             for obstacle in obstacle_group:
                 obstacle.freeze()
 
+    def reverse(self, obstacle_group, reverse_group):
+        if pygame.sprite.spritecollide(self, reverse_group, True):
+            for obstacle in obstacle_group:
+                obstacle.reverse()
+
     def update(
-        self, width, height, GROUND_LEVEL, obstacle_group, healthup_group, freeze_group
+        self,
+        width,
+        height,
+        GROUND_LEVEL,
+        obstacle_group,
+        healthup_group,
+        freeze_group,
+        reverse_group,
     ):
         self.move(width, height, GROUND_LEVEL)
         self.apply_gravity(height, GROUND_LEVEL)
         self.animation_state(GROUND_LEVEL)
-        self.check_collision(obstacle_group, healthup_group, freeze_group, GROUND_LEVEL)
+        self.check_collision(
+            obstacle_group, healthup_group, freeze_group, reverse_group, GROUND_LEVEL
+        )
         self.heal(healthup_group)
         self.freeze(obstacle_group, freeze_group)
+        self.reverse(obstacle_group, reverse_group)
 
 
 class Obstacle(pygame.sprite.Sprite):
@@ -127,6 +151,7 @@ class Obstacle(pygame.sprite.Sprite):
 
         self.is_frozen = False
         self.freeze_start_time = 0
+        self.direction_vector = 1
 
         if self.type == "fly":
             fly_frame_1 = pygame.image.load("../graphics/Fly/Fly1.png").convert_alpha()
@@ -169,7 +194,8 @@ class Obstacle(pygame.sprite.Sprite):
 
     def move(self, width):
         if not self.is_frozen:
-            self.rect.x -= width / 200
+            self.rect.x -= (width / 200) * self.direction_vector
+
         elif pygame.time.get_ticks() - self.freeze_start_time >= 2000:
             # Unfreeze this enemy after 2000ms
             self.is_frozen = False
@@ -178,6 +204,10 @@ class Obstacle(pygame.sprite.Sprite):
     def freeze(self):
         self.is_frozen = True
         self.freeze_start_time = pygame.time.get_ticks()
+
+    def reverse(self):
+        # Should change direction every time the arrows are touched
+        self.direction_vector = -self.direction_vector
 
     def destroy(self):
         if self.rect.x <= -100:
@@ -194,8 +224,10 @@ class Consumable(pygame.sprite.Sprite):
         super().__init__()
         if type == "beer":
             image_path = "../graphics/beer.png"
-        elif type == "snowflake":
-            image_path = "../graphics/snowflake.png"
+        elif type == "hourglass":
+            image_path = "../graphics/hourglass.png"
+        elif type == "arrows":
+            image_path = "../graphics/arrows.png"
         else:
             raise ValueError("Invalid consumable type")
         self.image = pygame.image.load(image_path)

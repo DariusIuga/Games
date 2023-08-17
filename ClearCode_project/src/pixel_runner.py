@@ -26,8 +26,18 @@ def main():
     obstacle_group = pygame.sprite.Group()
     healthup_group = pygame.sprite.Group()
     freeze_group = pygame.sprite.Group()
+    reverse_group = pygame.sprite.Group()
     player = pygame.sprite.GroupSingle()
-    player.add(Player(width, GROUND_LEVEL, PLAYER_DIMS, healthup_group, freeze_group))
+    player.add(
+        Player(
+            width,
+            GROUND_LEVEL,
+            PLAYER_DIMS,
+            healthup_group,
+            freeze_group,
+            reverse_group,
+        )
+    )
 
     # Textures
     ground = pygame.image.load("../graphics/ground.png").convert()
@@ -67,6 +77,9 @@ def main():
     freeze_timer = pygame.USEREVENT + 5
     pygame.time.set_timer(freeze_timer, 5)
 
+    reverse_timer = pygame.USEREVENT + 6
+    pygame.time.set_timer(reverse_timer, 5)
+
     while True:
         # Process user input
         for event in pygame.event.get():
@@ -93,7 +106,11 @@ def main():
                         )
                     if event.type == freeze_timer:
                         freeze_group.add(
-                            Consumable(width, height, GROUND_LEVEL, "snowflake")
+                            Consumable(width, height, GROUND_LEVEL, "hourglass")
+                        )
+                    if event.type == reverse_timer:
+                        reverse_group.add(
+                            Consumable(width, height, GROUND_LEVEL, "arrows")
                         )
 
             else:
@@ -137,6 +154,7 @@ def main():
             obstacle_group.update(width)
             healthup_group.draw(screen)
             freeze_group.draw(screen)
+            reverse_group.draw(screen)
             player.draw(screen)
             player.update(
                 width,
@@ -145,6 +163,7 @@ def main():
                 obstacle_group,
                 healthup_group,
                 freeze_group,
+                reverse_group,
             )
 
             current_score, highscore = display_score(
