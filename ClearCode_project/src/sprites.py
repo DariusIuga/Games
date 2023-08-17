@@ -14,17 +14,23 @@ class Surf_Rect(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, width, GROUND_LEVEL, PLAYER_DIMS, consumable_group):
+    def __init__(self, width, GROUND_LEVEL, PLAYER_DIMS, healthup_group, freeze_group):
         super().__init__()
 
-        walk_1 = pygame.image.load("../graphics/Player/player_walk_1.png").convert_alpha()
+        walk_1 = pygame.image.load(
+            "../graphics/Player/player_walk_1.png"
+        ).convert_alpha()
         walk_1 = pygame.transform.scale(walk_1, PLAYER_DIMS)
-        walk_2 = pygame.image.load("../graphics/Player/player_walk_2.png").convert_alpha()
+        walk_2 = pygame.image.load(
+            "../graphics/Player/player_walk_2.png"
+        ).convert_alpha()
         walk_2 = pygame.transform.scale(walk_2, PLAYER_DIMS)
         self.walk = [walk_1, walk_2]
         self.animation_index = 0
 
-        self.jump_frame = pygame.image.load("../graphics/Player/jump.png").convert_alpha()
+        self.jump_frame = pygame.image.load(
+            "../graphics/Player/jump.png"
+        ).convert_alpha()
         self.jump_frame = pygame.transform.scale(self.jump_frame, PLAYER_DIMS)
 
         self.image = self.walk[self.animation_index]
@@ -75,7 +81,9 @@ class Player(pygame.sprite.Sprite):
                 self.animation_index = 0
             self.image = self.walk[int(self.animation_index)]
 
-    def check_collision(self, obstacle_group, consumable_group, GROUND_LEVEL):
+    def check_collision(
+        self, obstacle_group, healthup_group, freeze_group, GROUND_LEVEL
+    ):
         if pygame.sprite.spritecollide(self, obstacle_group, True):
             self.hit_sound.play()
             self.lives -= 1
@@ -83,31 +91,43 @@ class Player(pygame.sprite.Sprite):
                 self.rect.bottom = GROUND_LEVEL
                 self.rect.left = 0
                 obstacle_group.empty()
-                consumable_group.empty()
+                healthup_group.empty()
+                freeze_group.empty()
 
-    def heal(self, consumable_group):
-        if pygame.sprite.spritecollide(self, consumable_group, True):
+    def heal(self, healthup_group):
+        if pygame.sprite.spritecollide(self, healthup_group, True):
             self.lives += 1
             if self.drunkennes < 1:
                 self.drunkennes += 0.1
 
     def revive(self):
-        # Player gets to full health and sobers up
         self.lives = self._starting_health
         self.drunkennes = 0
 
-    def update(self, width, height, GROUND_LEVEL, obstacle_group, consumable_group):
+    def freeze(self, obstacle_group, freeze_group):
+        if pygame.sprite.spritecollide(self, freeze_group, True):
+            for obstacle in obstacle_group:
+                obstacle.freeze()
+
+    def update(
+        self, width, height, GROUND_LEVEL, obstacle_group, healthup_group, freeze_group
+    ):
         self.move(width, height, GROUND_LEVEL)
         self.apply_gravity(height, GROUND_LEVEL)
         self.animation_state(GROUND_LEVEL)
-        self.check_collision(obstacle_group, consumable_group, GROUND_LEVEL)
-        self.heal(consumable_group)
+        self.check_collision(obstacle_group, healthup_group, freeze_group, GROUND_LEVEL)
+        self.heal(healthup_group)
+        self.freeze(obstacle_group, freeze_group)
 
 
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, width, height, GROUND_LEVEL, ENEMY_DIMS, type):
         super().__init__()
         self.type = type
+
+        self.is_frozen = False
+        self.freeze_start_time = 0
+
         if self.type == "fly":
             fly_frame_1 = pygame.image.load("../graphics/Fly/Fly1.png").convert_alpha()
             fly_frame_1 = pygame.transform.scale(fly_frame_1, ENEMY_DIMS)
@@ -115,6 +135,7 @@ class Obstacle(pygame.sprite.Sprite):
             fly_frame_2 = pygame.transform.scale(fly_frame_2, ENEMY_DIMS)
             self.frames = [fly_frame_1, fly_frame_2]
             y_pos = randint(height / 5, height / 2)
+
         elif self.type == "snail":
             snail_frame_1 = pygame.image.load(
                 "../graphics/snail/snail1.png"
@@ -126,6 +147,7 @@ class Obstacle(pygame.sprite.Sprite):
             snail_frame_2 = pygame.transform.scale(snail_frame_2, ENEMY_DIMS)
             self.frames = [snail_frame_1, snail_frame_2]
             y_pos = GROUND_LEVEL
+
         else:
             raise ValueError("Invalid enemy type, choose from 'fly' or 'snail'.")
 
@@ -145,20 +167,38 @@ class Obstacle(pygame.sprite.Sprite):
             self.animation_index = 0
         self.image = self.frames[int(self.animation_index)]
 
+    def move(self, width):
+        if not self.is_frozen:
+            self.rect.x -= width / 200
+        elif pygame.time.get_ticks() - self.freeze_start_time >= 2000:
+            # Unfreeze this enemy after 2000ms
+            self.is_frozen = False
+            self.freeze_start_time = 0
+
+    def freeze(self):
+        self.is_frozen = True
+        self.freeze_start_time = pygame.time.get_ticks()
+
     def destroy(self):
         if self.rect.x <= -100:
             self.kill()
 
     def update(self, width):
         self.animation_state()
-        self.rect.x -= width / 200
+        self.move(width)
         self.destroy()
 
 
 class Consumable(pygame.sprite.Sprite):
-    def __init__(self, width, height, GROUND_LEVEL):
+    def __init__(self, width, height, GROUND_LEVEL, type):
         super().__init__()
-        self.image = pygame.image.load("../graphics/beer.png")
+        if type == "beer":
+            image_path = "../graphics/beer.png"
+        elif type == "snowflake":
+            image_path = "../graphics/snowflake.png"
+        else:
+            raise ValueError("Invalid consumable type")
+        self.image = pygame.image.load(image_path)
         self.image = pygame.transform.scale(self.image, (width / 10, height / 10))
         self.rect = self.image.get_rect(
             center=(randint(0, width), randint(0, GROUND_LEVEL))

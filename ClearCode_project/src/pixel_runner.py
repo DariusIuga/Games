@@ -1,6 +1,7 @@
 from game_state import *
 from sprites import *
 
+
 def main():
     pygame.init()
 
@@ -23,9 +24,10 @@ def main():
 
     # Groups
     obstacle_group = pygame.sprite.Group()
-    consumable_group = pygame.sprite.Group()
+    healthup_group = pygame.sprite.Group()
+    freeze_group = pygame.sprite.Group()
     player = pygame.sprite.GroupSingle()
-    player.add(Player(width, GROUND_LEVEL, PLAYER_DIMS, consumable_group))
+    player.add(Player(width, GROUND_LEVEL, PLAYER_DIMS, healthup_group, freeze_group))
 
     # Textures
     ground = pygame.image.load("../graphics/ground.png").convert()
@@ -59,8 +61,11 @@ def main():
     fly_animation_timer = pygame.USEREVENT + 3
     pygame.time.set_timer(fly_animation_timer, 200)
 
-    bonus_chance_timer = pygame.USEREVENT + 4
-    pygame.time.set_timer(bonus_chance_timer, 5)
+    health_up_timer = pygame.USEREVENT + 4
+    pygame.time.set_timer(health_up_timer, 5)
+
+    freeze_timer = pygame.USEREVENT + 5
+    pygame.time.set_timer(freeze_timer, 5)
 
     while True:
         # Process user input
@@ -80,9 +85,16 @@ def main():
                             choice(["fly", "snail"]),
                         )
                     )
-                # 1/1000 chance of spawning a beer
-                if event.type == bonus_chance_timer and random() > 0.999:
-                    consumable_group.add(Consumable(width, height, GROUND_LEVEL))
+                # 1/1000 chance for each timer
+                if random() > 0.999:
+                    if event.type == health_up_timer:
+                        healthup_group.add(
+                            Consumable(width, height, GROUND_LEVEL, "beer")
+                        )
+                    if event.type == freeze_timer:
+                        freeze_group.add(
+                            Consumable(width, height, GROUND_LEVEL, "snowflake")
+                        )
 
             else:
                 # Press any button to continue
@@ -100,10 +112,6 @@ def main():
 
             screen.blit(
                 default_font.render(str(int(clock.get_fps())), False, "green"), (0, 0)
-            )
-
-            current_score, highscore = display_score(
-                width, height, screen, default_font, start_time, highscore
             )
 
             score_message_surf = default_font.render(
@@ -127,9 +135,21 @@ def main():
             # Draw the sprites
             obstacle_group.draw(screen)
             obstacle_group.update(width)
-            consumable_group.draw(screen)
+            healthup_group.draw(screen)
+            freeze_group.draw(screen)
             player.draw(screen)
-            player.update(width, height, GROUND_LEVEL, obstacle_group, consumable_group)
+            player.update(
+                width,
+                height,
+                GROUND_LEVEL,
+                obstacle_group,
+                healthup_group,
+                freeze_group,
+            )
+
+            current_score, highscore = display_score(
+                width, height, screen, default_font, start_time, highscore
+            )
 
         else:
             # Game Over screen
