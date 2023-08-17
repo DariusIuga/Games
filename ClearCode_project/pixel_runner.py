@@ -257,7 +257,11 @@ def main():
             )
 
             heal_player(player, consumable_group)
-            collision_sprite(player, obstacle_group, consumable_group, GROUND_LEVEL)
+            hit_sound = pygame.mixer.Sound("audio/vine-boom.mp3")
+            hit_sound.set_volume(0.3)
+            collision_sprite(
+                player, obstacle_group, consumable_group, GROUND_LEVEL, hit_sound
+            )
 
             # Draw the sprites
             player.draw(screen)
@@ -308,8 +312,9 @@ def display_score(width, height, screen, default_font, start_time, highscore):
     return current_score, highscore
 
 
-def collision_sprite(player, obstacle_group, consumable_group, GROUND_LEVEL):
+def collision_sprite(player, obstacle_group, consumable_group, GROUND_LEVEL, hit_sound):
     if pygame.sprite.spritecollide(player.sprite, obstacle_group, True):
+        hit_sound.play()
         player.sprite.lives -= 1
         if player.sprite.lives == 0:
             player.sprite.rect.bottom = GROUND_LEVEL
