@@ -1,8 +1,18 @@
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from random import choice, randint, random
 from sys import exit
 
 import pygame
+
+# Get the directory of the current script
+script_dir = Path(__file__).resolve().parent
+
+
+def get_resource_path(resource):
+    # Construct the resource path based on the script directory
+    return os.path.join(script_dir, resource)
 
 
 # This is a simple dataclass used for grouping surfaces and rectangles.
@@ -29,18 +39,18 @@ class Player(pygame.sprite.Sprite):
         self.iframes_start_time = 0
 
         walk_1 = pygame.image.load(
-            "../graphics/Player/player_walk_1.png"
+            get_resource_path("../graphics/Player/player_walk_1.png")
         ).convert_alpha()
         walk_1 = pygame.transform.scale(walk_1, PLAYER_DIMS)
         walk_2 = pygame.image.load(
-            "../graphics/Player/player_walk_2.png"
+            get_resource_path("../graphics/Player/player_walk_2.png")
         ).convert_alpha()
         walk_2 = pygame.transform.scale(walk_2, PLAYER_DIMS)
         self.walk = [walk_1, walk_2]
         self.animation_index = 0
 
         self.jump_frame = pygame.image.load(
-            "../graphics/Player/jump.png"
+            get_resource_path("../graphics/Player/jump.png")
         ).convert_alpha()
         self.jump_frame = pygame.transform.scale(self.jump_frame, PLAYER_DIMS)
 
@@ -48,21 +58,25 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(width / 8, GROUND_LEVEL))
         self.gravity = 0
 
-        self.jump_sound = pygame.mixer.Sound("../audio/jump.mp3")
+        self.jump_sound = pygame.mixer.Sound(get_resource_path("../audio/jump.mp3"))
         self.jump_sound.set_volume(0.2)
 
-        self.hit_sound = pygame.mixer.Sound("../audio/vine-boom.mp3")
+        self.hit_sound = pygame.mixer.Sound(get_resource_path("../audio/vine-boom.mp3"))
         self.hit_sound.set_volume(0.3)
 
         self.drink_sound = pygame.mixer.Sound(
-            "../audio/minecraft-drinking-sound-effect.mp3"
+            get_resource_path("../audio/minecraft-drinking-sound-effect.mp3")
         )
         self.drink_sound.set_volume(0.3)
 
-        self.time_stop_sound = pygame.mixer.Sound("../audio/za_warudo.mp3")
+        self.time_stop_sound = pygame.mixer.Sound(
+            get_resource_path("../audio/za_warudo.mp3")
+        )
         self.time_stop_sound.set_volume(0.2)
 
-        self.reverse_sound = pygame.mixer.SoundType("../audio/swoosh.wav")
+        self.reverse_sound = pygame.mixer.SoundType(
+            get_resource_path("../audio/swoosh.wav")
+        )
         self.reverse_sound.set_volume(0.5)
 
         self._starting_health = 3
@@ -103,6 +117,10 @@ class Player(pygame.sprite.Sprite):
                 self.animation_index = 0
             self.image = self.walk[int(self.animation_index)]
 
+    def apply_tint(self, tint_factor):
+        pass
+        # TODO
+
     def check_collision(
         self, obstacle_group, healthup_group, freeze_group, reverse_group, GROUND_LEVEL
     ):
@@ -120,12 +138,10 @@ class Player(pygame.sprite.Sprite):
 
                 self.is_invincible = True
                 self.iframes_start_time = pygame.time.get_ticks()
-                print("Iframes started")
 
         if pygame.time.get_ticks() - self.iframes_start_time >= 1000:
             self.is_invincible = False
             self.iframes_start_time = 0
-            print("Iframes ended")
 
     def heal(self, healthup_group):
         if pygame.sprite.spritecollide(self, healthup_group, True):
@@ -181,20 +197,20 @@ class Obstacle(pygame.sprite.Sprite):
         self.direction_vector = 1
 
         if self.type == "fly":
-            fly_frame_1 = pygame.image.load("../graphics/Fly/Fly1.png").convert_alpha()
+            fly_frame_1 = pygame.image.load(get_resource_path("../graphics/Fly/Fly1.png")).convert_alpha()
             fly_frame_1 = pygame.transform.scale(fly_frame_1, ENEMY_DIMS)
-            fly_frame_2 = pygame.image.load("../graphics/Fly/Fly2.png").convert_alpha()
+            fly_frame_2 = pygame.image.load(get_resource_path("../graphics/Fly/Fly2.png")).convert_alpha()
             fly_frame_2 = pygame.transform.scale(fly_frame_2, ENEMY_DIMS)
             self.frames = [fly_frame_1, fly_frame_2]
             y_pos = randint(height / 5, height / 2)
 
         elif self.type == "snail":
             snail_frame_1 = pygame.image.load(
-                "../graphics/snail/snail1.png"
+                get_resource_path("../graphics/snail/snail1.png")
             ).convert_alpha()
             snail_frame_1 = pygame.transform.scale(snail_frame_1, ENEMY_DIMS)
             snail_frame_2 = pygame.image.load(
-                "../graphics/snail/snail2.png"
+                get_resource_path("../graphics/snail/snail2.png")
             ).convert_alpha()
             snail_frame_2 = pygame.transform.scale(snail_frame_2, ENEMY_DIMS)
             self.frames = [snail_frame_1, snail_frame_2]
@@ -250,11 +266,11 @@ class Consumable(pygame.sprite.Sprite):
     def __init__(self, width, height, GROUND_LEVEL, type):
         super().__init__()
         if type == "beer":
-            image_path = "../graphics/beer.png"
+            image_path = get_resource_path("../graphics/beer.png")
         elif type == "hourglass":
-            image_path = "../graphics/hourglass.png"
+            image_path = get_resource_path("../graphics/hourglass.png")
         elif type == "arrows":
-            image_path = "../graphics/arrows.png"
+            image_path = get_resource_path("../graphics/arrows.png")
         else:
             raise ValueError("Invalid consumable type")
         self.image = pygame.image.load(image_path)

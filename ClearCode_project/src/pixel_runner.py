@@ -15,11 +15,11 @@ def main():
 
     pygame.display.set_caption("Pixel Runner")
     clock = pygame.time.Clock()
-    default_font = pygame.font.Font("../fonts/Pixeltype.ttf", 100)
+    default_font = pygame.font.Font(get_resource_path("../fonts/Pixeltype.ttf"), 100)
     start_time = 0
     current_score = 0
     highscore = 0
-    background_music = pygame.mixer.Sound("../audio/epic.opus")
+    background_music = pygame.mixer.Sound(get_resource_path("../audio/epic.opus"))
     background_music.play(loops=-1)
 
     # Groups
@@ -40,25 +40,25 @@ def main():
     )
 
     # Textures
-    ground = pygame.image.load("../graphics/ground.png").convert()
+    ground = pygame.image.load(get_resource_path("../graphics/ground.png")).convert()
     ground = pygame.transform.scale(ground, (width, height - GROUND_LEVEL))
-    sky = pygame.image.load("../graphics/sky.png").convert()
+    sky = pygame.image.load(get_resource_path("../graphics/sky.png")).convert()
     sky = pygame.transform.scale(sky, (width, GROUND_LEVEL))
-    heart = pygame.image.load("../graphics/heart.png")
-    heart = pygame.transform.scale(heart, (width / 16, height / 10))
+    heart = pygame.image.load(get_resource_path("../graphics/heart.png"))
+    heart = pygame.transform.scale(heart, (width // 16, height // 10))
 
     # Menu screen
     player_stand_surf = pygame.image.load(
-        "../graphics/Player/player_stand.png"
+        get_resource_path("../graphics/Player/player_stand.png")
     ).convert_alpha()
     player_stand_surf = pygame.transform.scale(
-        player_stand_surf, (width / 8, height / 4)
+        player_stand_surf, (width // 8, height // 4)
     )
-    player_stand_rect = player_stand_surf.get_rect(midbottom=(width / 2, height / 2))
+    player_stand_rect = player_stand_surf.get_rect(midbottom=(width // 2, height // 2))
     player_stand = Surf_Rect(player_stand_surf, player_stand_rect)
 
     game_name_surf = default_font.render("Pixel runner", None, MESSAGE_COLOR)
-    game_name_rect = game_name_surf.get_rect(center=(width / 2, height / 5))
+    game_name_rect = game_name_surf.get_rect(center=(width // 2, height // 5))
     game_name = Surf_Rect(game_name_surf, game_name_rect)
 
     # Timers
