@@ -25,6 +25,9 @@ class Player(pygame.sprite.Sprite):
     ):
         super().__init__()
 
+        self.is_invincible = False
+        self.iframes_start_time = 0
+
         walk_1 = pygame.image.load(
             "../graphics/Player/player_walk_1.png"
         ).convert_alpha()
@@ -50,13 +53,15 @@ class Player(pygame.sprite.Sprite):
 
         self.hit_sound = pygame.mixer.Sound("../audio/vine-boom.mp3")
         self.hit_sound.set_volume(0.3)
-        
-        self.drink_sound = pygame.mixer.Sound("../audio/minecraft-drinking-sound-effect.mp3")
+
+        self.drink_sound = pygame.mixer.Sound(
+            "../audio/minecraft-drinking-sound-effect.mp3"
+        )
         self.drink_sound.set_volume(0.3)
-        
+
         self.time_stop_sound = pygame.mixer.Sound("../audio/za_warudo.mp3")
         self.time_stop_sound.set_volume(0.2)
-        
+
         self.reverse_sound = pygame.mixer.SoundType("../audio/swoosh.wav")
         self.reverse_sound.set_volume(0.5)
 
@@ -102,15 +107,25 @@ class Player(pygame.sprite.Sprite):
         self, obstacle_group, healthup_group, freeze_group, reverse_group, GROUND_LEVEL
     ):
         if pygame.sprite.spritecollide(self, obstacle_group, True):
-            self.hit_sound.play()
-            self.lives -= 1
-            if self.lives == 0:
-                self.rect.bottom = GROUND_LEVEL
-                self.rect.left = 0
-                obstacle_group.empty()
-                healthup_group.empty()
-                freeze_group.empty()
-                reverse_group.empty()
+            if not self.is_invincible:
+                self.hit_sound.play()
+                self.lives -= 1
+                if self.lives == 0:
+                    self.rect.bottom = GROUND_LEVEL
+                    self.rect.left = 0
+                    obstacle_group.empty()
+                    healthup_group.empty()
+                    freeze_group.empty()
+                    reverse_group.empty()
+
+                self.is_invincible = True
+                self.iframes_start_time = pygame.time.get_ticks()
+                print("Iframes started")
+
+        if pygame.time.get_ticks() - self.iframes_start_time >= 1000:
+            self.is_invincible = False
+            self.iframes_start_time = 0
+            print("Iframes ended")
 
     def heal(self, healthup_group):
         if pygame.sprite.spritecollide(self, healthup_group, True):
