@@ -72,13 +72,13 @@ def main():
     pygame.time.set_timer(fly_animation_timer, 200)
 
     health_up_timer = pygame.USEREVENT + 4
-    pygame.time.set_timer(health_up_timer, 5)
+    pygame.time.set_timer(health_up_timer, 10)
 
     freeze_timer = pygame.USEREVENT + 5
-    pygame.time.set_timer(freeze_timer, 5)
+    pygame.time.set_timer(freeze_timer, 15)
 
     reverse_timer = pygame.USEREVENT + 6
-    pygame.time.set_timer(reverse_timer, 5)
+    pygame.time.set_timer(reverse_timer, 25)
 
     while True:
         # Process user input

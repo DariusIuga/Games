@@ -50,6 +50,15 @@ class Player(pygame.sprite.Sprite):
 
         self.hit_sound = pygame.mixer.Sound("../audio/vine-boom.mp3")
         self.hit_sound.set_volume(0.3)
+        
+        self.drink_sound = pygame.mixer.Sound("../audio/minecraft-drinking-sound-effect.mp3")
+        self.drink_sound.set_volume(0.3)
+        
+        self.time_stop_sound = pygame.mixer.Sound("../audio/za_warudo.mp3")
+        self.time_stop_sound.set_volume(0.2)
+        
+        self.reverse_sound = pygame.mixer.SoundType("../audio/swoosh.wav")
+        self.reverse_sound.set_volume(0.5)
 
         self._starting_health = 3
         self.lives = self._starting_health
@@ -106,6 +115,7 @@ class Player(pygame.sprite.Sprite):
     def heal(self, healthup_group):
         if pygame.sprite.spritecollide(self, healthup_group, True):
             self.lives += 1
+            self.drink_sound.play()
             if self.drunkennes < 1:
                 self.drunkennes += 0.1
 
@@ -115,11 +125,13 @@ class Player(pygame.sprite.Sprite):
 
     def freeze(self, obstacle_group, freeze_group):
         if pygame.sprite.spritecollide(self, freeze_group, True):
+            self.time_stop_sound.play()
             for obstacle in obstacle_group:
                 obstacle.freeze()
 
     def reverse(self, obstacle_group, reverse_group):
         if pygame.sprite.spritecollide(self, reverse_group, True):
+            self.reverse_sound.play()
             for obstacle in obstacle_group:
                 obstacle.reverse()
 
