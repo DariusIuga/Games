@@ -8,6 +8,8 @@ def main():
     # If the dimensions are set to 0, the game runs in fullscreen
     screen = pygame.display.set_mode((0, 0))
     width, height = screen.get_size()
+
+    # Global Constants
     GROUND_LEVEL = 3 * height / 4
     MESSAGE_COLOR = (111, 196, 169)
     PLAYER_DIMS = (width / 16, height / 6)
@@ -102,7 +104,7 @@ def main():
                 if random() > 0.999:
                     if event.type == health_up_timer:
                         healthup_group.add(
-                            Consumable(width, height, GROUND_LEVEL, "beer")
+                            Consumable(width, height, GROUND_LEVEL, "beverage")
                         )
                     if event.type == freeze_timer:
                         freeze_group.add(

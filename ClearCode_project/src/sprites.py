@@ -9,9 +9,9 @@ import pygame
 # Get the directory of the current script
 script_dir = Path(__file__).resolve().parent
 
-
 def get_resource_path(resource):
     # Construct the resource path based on the script directory
+    # The paths should work irregardless of the OS used
     return os.path.join(script_dir, resource)
 
 
@@ -197,9 +197,13 @@ class Obstacle(pygame.sprite.Sprite):
         self.direction_vector = 1
 
         if self.type == "fly":
-            fly_frame_1 = pygame.image.load(get_resource_path("../graphics/Fly/Fly1.png")).convert_alpha()
+            fly_frame_1 = pygame.image.load(
+                get_resource_path("../graphics/Fly/Fly1.png")
+            ).convert_alpha()
             fly_frame_1 = pygame.transform.scale(fly_frame_1, ENEMY_DIMS)
-            fly_frame_2 = pygame.image.load(get_resource_path("../graphics/Fly/Fly2.png")).convert_alpha()
+            fly_frame_2 = pygame.image.load(
+                get_resource_path("../graphics/Fly/Fly2.png")
+            ).convert_alpha()
             fly_frame_2 = pygame.transform.scale(fly_frame_2, ENEMY_DIMS)
             self.frames = [fly_frame_1, fly_frame_2]
             y_pos = randint(height / 5, height / 2)
@@ -265,8 +269,8 @@ class Obstacle(pygame.sprite.Sprite):
 class Consumable(pygame.sprite.Sprite):
     def __init__(self, width, height, GROUND_LEVEL, type):
         super().__init__()
-        if type == "beer":
-            image_path = get_resource_path("../graphics/beer.png")
+        if type == "beverage":
+            image_path = get_resource_path("../graphics/beverage.png")
         elif type == "hourglass":
             image_path = get_resource_path("../graphics/hourglass.png")
         elif type == "arrows":
